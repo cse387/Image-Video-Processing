@@ -5,13 +5,14 @@ import numpy as np
 import cv2 as cv
 import math
 from matplotlib import pyplot as plt
+
 def EF(gray,sigma):
-    Ix=np.zeros(gray.shape)
-    Iy=np.zeros(gray.shape)
+    Ix = np.zeros(gray.shape)
+    Iy = np.zeros(gray.shape)
     filters.gaussian_filter(gray, sigma, (0,1), Ix)
     filters.gaussian_filter(gray, sigma, (1,0), Iy)
-    Ix=np.fabs(Ix)
-    Iy=np.fabs(Iy)
+    Ix = np.fabs(Ix)
+    Iy = np.fabs(Iy)
     return np.add(Ix,Iy)
 '''
 def proc(j,M,e):
@@ -20,50 +21,54 @@ def proc(j,M,e):
     else:
         M[i,j]=e[i,j]+min(M[i-1,j-1:j+2])
     '''
+
 def optimal_vertical_seam(e):
-    M=e[:]
-    r,c=e.shape
-    mask=np.ones(e.shape,dtype=np.bool)
+    M = e[:]
+    r,c = e.shape
+    mask = np.ones(e.shape,dtype=np.bool)
     num_cores = multiprocessing.cpu_count()
     for i in range(1,r):
         #Parallel(n_jobs=num_cores)(delayed(proc)(j)
         for j in range(c):
-            if(j==0):
-                M[i,j]=e[i,j]+min(M[i-1,j:j+2])
+            if(j == 0):
+                M[i,j] = e[i,j] + min(M[i-1,j:j+2])
             else:
-                M[i,j]=e[i,j]+min(M[i-1,j-1:j+2])
+                M[i,j] = e[i,j] + min(M[i-1,j-1:j+2])
     backtrack(M,mask,r-1,np.argmin(M[r-1,:]))
     return mask
+
 def carving_vertical(image):
-    r,c,p=image.shape
-    gray=cv.cvtColor(image,cv.COLOR_BGR2GRAY)
-    sigma=0.25
-    energy=EF(gray,sigma)
-    mask=optimal_vertical_seam(energy)
-    mask=np.stack([mask]*3,axis=2)
-    image=image[mask].reshape((r,c-1,p))
+    r,c,p = image.shape
+    gray = cv.cvtColor(image,cv.COLOR_BGR2GRAY)
+    sigma = 0.25
+    energy = EF(gray,sigma)
+    mask = optimal_vertical_seam(energy)
+    mask = np.stack([mask]*3,axis=2)
+    image = image[mask].reshape((r,c-1,p))
     return image
+
 def backtrack(M,mask,i,j):
-    mask[i,j]=False
-    if(i==0):
+    mask[i,j] = False
+    if(i == 0):
         return
-    elif(j==0):
-        idx=np.argmin(M[i,j:j+2])
+    elif(j == 0):
+        idx = np.argmin(M[i,j:j+2])
         backtrack(M,mask,i-1,idx)
     else:
-        idx=j-1+np.argmin(M[i,j-1:j+2])
+        idx = j - 1 + np.argmin(M[i,j-1:j+2])
         backtrack(M,mask,i-1,idx)
+        
 def EF1(gray,sigma):
     #create gaussian kernel 
-    B=np.array([[[-1,-1],[-1,0],[-1,1]],
+    B = np.array([[[-1,-1],[-1,0],[-1,1]],
                 [[ 0,-1],[ 0,0],[ 0,1]],
                 [[ 1,-1],[ 1,0],[ 1,1]]])
-    pi=math.pi
-    D=-(B[:,:,0]**2+B[:,:,1]**2)/(2*sigma**2)
-    D=np.exp(D)/(2*(sigma)**2*pi)
+    pi = math.pi
+    D = -(B[:,:,0]**2+B[:,:,1]**2)/(2*sigma**2)
+    D = np.exp(D)/(2*(sigma)**2*pi)
     #create the derivatives
-    bx=-2*B[:,:,0]*D/(2*(sigma)**2)
-    by=-2*B[:,:,1]*D/(2*(sigma)**2)
+    bx = -2*B[:,:,0]*D/(2*(sigma)**2)
+    by = -2*B[:,:,1]*D/(2*(sigma)**2)
     '''
     Gx=np.zeros(gray.shape)
     Gy=np.zeros(gray.shape)
@@ -81,30 +86,16 @@ def EF1(gray,sigma):
     Ix=np.fabs(gray*Gx)
     Iy=np.fabs(gray*Gy)
     '''
-    Ix=np.fabs(convolve(gray,bx))#convolution cernel with the image
-    Iy=np.fabs(convolve(gray,by))
+    Ix = np.fabs(convolve(gray,bx))#convolution cernel with the image
+    Iy = np.fabs(convolve(gray,by))
     return np.add(Ix,Iy)
-def main():
-    t1=time.clock()
-    image=cv.imread('austin.jpg')
-    img=image
-    r,c,p=image.shape
-    for i in range(500):
-        image=carving_vertical(image)
-    print("time",time.clock()-t1)
-    gray=cv.cvtColor(image,cv.COLOR_BGR2GRAY)
-    gray=np.float32(gray)
-    energy=EF(gray,0.25)
-    print("eval",sum(sum(energy))/energy.size)
-    plt.imshow(image)
-    plt.show()
-if __name__=="__main__":
-    main()
+
 def carving_horizontal(image):
     image=np.rot90(image,1,(0,1))
     image=carving_vertical(image)
     image=np.rot90(image,3,(0,1))
     return image
+
 def show_seam(img,mask):
     r,c,_=img.shape
     imgDisplayed=img[:]
@@ -112,7 +103,8 @@ def show_seam(img,mask):
         for j in range(c):
             if(mask[i][j]==False):
                imgDisplayed[i][j]=[0,0,208]
-    return imgDisplayed   
+    return imgDisplayed
+
 def minimum_seam(img):
     r, c, _ = img.shape
     energy_map = calc_energy(img)
@@ -136,7 +128,7 @@ def minimum_seam(img):
 
     return M, backtrack
 
-from scipy.ndimage.filters import convolve
+
 def calc_energy(img):
     filter_du = np.array([
         [1.0, 2.0, 1.0],
@@ -163,4 +155,24 @@ def calc_energy(img):
     energy_map = convolved.sum(axis=2)
 
     return energy_map
+
+def main():
+    t1 = time.clock()
+    image = cv.imread('austin.jpg')
+    img = image
+    r,c,p = image.shape
+    for i in range(500):
+        image = carving_vertical(image)
+    print("time",time.clock()-t1)
+    gray = cv.cvtColor(image,cv.COLOR_BGR2GRAY)
+    gray = np.float32(gray)
+    energy = EF(gray,0.25)
+    print("eval",sum(sum(energy))/energy.size)
+    plt.imshow(image)
+    plt.show()
+    
+if __name__=="__main__":
+    main()
+    
+
 

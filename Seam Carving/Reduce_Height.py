@@ -6,24 +6,30 @@ from matplotlib import pyplot as plt
     #def __init__(self,image,height):
     #    self.image=image
     #    self.height=height
+    
 def ReduceHeight(image,height):
-    image=np.rot90(image,1,(0,1))
-    image=ReduceWidth(image,height)
-    image=np.rot90(image,3,(0,1))
+    image = np.rot90(image,1,(0,1))
+    image = ReduceWidth(image,height)
+    image = np.rot90(image,3,(0,1))
     return image
+
 def show_seam_horizontal(imgDisplayed):
-    imgDisplayed=np.rot90(imgDisplayed,1,(0,1))
-    imgDisplayed=show_seam_vertical(imgDisplayed)
-    imgDisplayed=np.rot90(imgDisplayed,3,(0,1))
+    imgDisplayed = np.rot90(imgDisplayed,1,(0,1))
+    imgDisplayed = show_seam_vertical(imgDisplayed)
+    imgDisplayed = np.rot90(imgDisplayed,3,(0,1))
     return imgDisplayed
+
 def horizontal_energy_map(image):
-    image=np.rot90(image,1,(0,1))
-    M=vertical_energy_map(image)
-    M=np.rot90(M,3,(0,1))
+    
+    image = np.rot90(image,1,(0,1))
+    M = vertical_energy_map(image)
+    M = np.rot90(M,3,(0,1))
     return M
+
 def totalmaskhorizontal():
-    mask=totalmaskvertical()
+    mask = totalmaskvertical()
     return np.rot90(mask,1,(0,1))
+
 def main():
     image=cv.imread('disney.jpg',1)
     imageout=ReduceHeight(image,100)
@@ -34,5 +40,6 @@ def main():
     plt.imshow(show_seam_horizontal(image))
     plt.title('horizontal seams display \n initial shape '+str(image.shape))
     plt.show()
+    
 if __name__ == "__main__":
     main()
